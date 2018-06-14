@@ -11,14 +11,12 @@ In this report we analyze a dataset recorded by a quantified-self device over a 
 
 ## Loading and preprocessing the data
 
-Here we load the data into a dataframe, named dat, using R's built-in read.csv method. Also loaded are the dplyr, ggplot2, RColorBrewer, scales, and viridis packages.  
-```{r} 
+Here we load the data into a dataframe, named dat, using R's built-in read.csv method. Also loaded are the dplyr, and ggplot2 packages.  
+```{r, results='hide'} 
 dat <- read.csv("activity.csv")
 library(dplyr)
 library(ggplot2)
-library(viridis)
-library(RColorBrewer)
-library(scales)
+
 ```
 
 ## What is mean total number of steps taken per day?
@@ -29,8 +27,8 @@ Below is a histogram of the total number of steps take per and the code that was
 
 gdat <- group_by(dat, date)
 gdat <- summarise(gdat, stepsperday = sum(steps))
-hist(gdat$stepsperday, main = "Frequencies of Steps-per-Day", xlab = "Steps-per-Day", col = "lightgreen")
-
+hist(gdat$stepsperday, main = "Frequencies of Steps-per-Day", xlab = "Steps-per-Day", col = "lightgreen", breaks = 10) 
+     
 ```
   We can see that on most days the user took more than 10000 steps. Now we calculate the mean and mediam of steps-per-day by running the following code. 
 
@@ -41,82 +39,18 @@ median(gdat$stepsperday, na.rm = TRUE)
 
 
 ## What is the average daily activity pattern?
-First we implement a function to define a theme for the plot to come. 
-```{r}
-fte_theme <- function() {
-  
-  # Generate the colors for the chart procedurally with RColorBrewer
-  vi_pal = viridis_pal(option = 'D')(30)
-  rdg <- brewer.pal("RdGy", n = 11)
-  color.plotback = rdg[6]
-  color.panelback = rdg[7]
-  color.grid.major = rdg[6]
-  color.grid.minor = rdg[6]
-  color.axis.text = vi_pal[1]
-  color.axis.title = vi_pal[18]
-  color.title = vi_pal[1]
-  color.lines = vi_pal[0]
-  color.panelborder = vi_pal[18]
-  color.grid.ticks = vi_pal[18]
-  
-  # Begin construction of chart
-  
-  theme_bw(base_size=9) +
-    
-    # Set the entire chart region to a light gray color
-    
-    theme(panel.background=element_rect(fill=color.plotback, color=color.plotback)) +
-    theme(plot.background=element_rect(fill=color.panelback, color=color.panelback)) +
-    theme(panel.border=element_rect(color=color.panelborder, size = .5)) +
-    
-    # Format the grid
-    
-    theme(panel.grid.major=element_line(color=color.grid.major,size=.25)) +
-    theme(panel.grid.minor=element_line(color=color.grid.minor,size=.25)) +
-    theme(axis.ticks=element_line(color=color.grid.ticks,size=1)) +
 
-    # Format the legend, but hide by default
-    
-    theme(legend.position="none") +
-    theme(legend.background = element_rect(fill=color.plotback)) +
-    theme(legend.text = element_text(size=7,color=color.axis.title)) +
-    
-    # Set title and axis labels, and format these and tick marks
-    
-    theme(plot.title=element_text(color=color.title, size=10, vjust=1.25)) +
-    theme(axis.text.x=element_text(size=7,color=color.axis.text)) +
-    theme(axis.text.y=element_text(size=7,color=color.axis.text)) +
-    theme(axis.title.x=element_text(size=8,color=color.axis.title, vjust=0)) +
-    theme(axis.title.y=element_text(size=8,color=color.axis.title, vjust=1.25)) +
-    
-    # Plot margins
-    
-    theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
-}
-```
-
-There are 288 5-minute intervals per day. We add a column 'intervalgroup' to our 
-dataframe and initialize it with values from 1-17568. Now, modulo 288, each entry of the intervalgoup column tells us which one of the 288 5-minute intervals it coincides with. We then loop through the 17568 observations and assign an integer between 0-287 according to which 5-minute interval it occurred in. 
-```{r}
-dat$intervalgroup = c(1:17568)
-for(i in 1:17568)
-{
-  dat$intervalgroup[i] = dat$intervalgroup[i]%%288
-}
-```
-The next step is to calculate the averages of each of these 5-minute intervals accross the 61-day period and make a line plot showing how vary across that period. 
+Calculate the averages of each of these 5-minute intervals accross the 61-day period and make a line plot showing how vary across that period. 
 
 ```{r}
-vi_pal = viridis_pal()(30)
-intervalMeans = aggregate(steps ~ intervalgroup, data = dat, mean)
+intervalMeans = aggregate(FUN = mean, steps ~ interval, data = dat)
 intervalData = as.data.frame(intervalMeans)
 names(intervalData) = c("interval_group", "average_steps")
 
-g <- ggplot(intervalData) + geom_line(aes(interval_group, average_steps), col = vi_pal[1]) +
+ggplot(intervalData) + geom_line(aes(interval_group, average_steps, col = "red")) +
         xlab("Interval Group") + ylab("Average Steps") +
-        labs(title = "Interval Group Averages Over 61-Day Period")   + fte_theme()
-        
-g
+        labs(title = "Interval Step Averages Over 61-Day Period")  +
+        theme_dark()
 ```
 We determine which 5-minute interval, on average, contains the largest quantity of 
 steps.
@@ -138,6 +72,7 @@ value of steps taken for the 5-minutes interval associated with that observation
 
 ```{r}
 standarddat = data.frame(dat)
+
 for(i in 1:17568)
 {
         if(is.na(standarddat$steps[i]))
@@ -149,7 +84,11 @@ for(i in 1:17568)
 
 nicedata <- group_by(standarddat, date)
 nicedata <- summarise(nicedata, stepsperday = sum(steps))
-hist(nicedata$stepsperday, main = "Frequencies of Steps-per-Day", xlab = "Steps-per-Day", col = "lightgreen")
+hist(nicedata$stepsperday, main = "Frequencies of Steps-per-Day", xlab = "Steps-per-Day", col = "lightgreen", breaks  = 10) 
+
+
+
+
 
 ```
 
@@ -161,49 +100,54 @@ median(nicedata$stepsperday)
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-Since the day of the first observation in the dataset is a Monday, and since there are
-61 days of observations in the dataset, if we let i browse over the integers 1-61, then
-the values of i where i mod 6 = 0 or i mod 7 = 0 correspond to days of the weekend.
-We use this fact to add a new variable to our dataset, one that tells us if the day
+Since the day of the first observation in the dataset is a Monday, if we let i browse over the integers 1-288, then the values of i where i mod 6 = 0 or i mod 7 = 0 correspond to days of the weekend. We use this fact to add a new variable to our dataset, one that tells us if the day
 is a weekday or weekend.
 
 ```{r}
-day = 0
-standarddat$day = rep("day", 17568)
-for(i in 1:61)
+standarddat$date = as.character(standarddat$date)
+standarddat$date = as.POSIXlt(standarddat$date)
+weekdata <- data.frame(standarddat)
+
+for(i in 1:17568)
 {
-        if(i%%6==0 || i%%7==0)
+        if( weekdays(standarddat$date[i]) == "Saturday" ||
+            weekdays(standarddat$date[i]) == "Sunday")
         {
-                for(k in 1:288)
-                {
-                        standarddat$day[day*288 + k] = "weekend"
-                }
-                day = day + 1
+                   weekdata$day[i] = "weekend"
         }
         else
         {
-                for(k in 1:288)
-                {
-                        standarddat$day[day*288 + k] = "weekday"
-                }
-                day = day + 1
+                weekdata$day[i] = "weekday"
         }
-
+         
 }
-standarddat$day = as.factor(standarddat$day)
-str(standarddat)
+        
+
+weekdaydat = subset(weekdata, day = "weekday")
+weekenddat = subset(weekdata, day = "weekend")
+
+avgweekdaydat = aggregate(FUN = mean, steps ~ interval, data = weekdaydat)
+avgweekenddat = aggregate(FUN = mean, steps ~ interval, data = weekenddat)
+
+avgweekdaydat$day = rep("weekday", length(weekdaydat))
+avgweekenddat$day = rep("weekend", length(weekenddat))
+
+avgintervaldat = rbind(avgweekenddat, avgweekdaydat)
+
+str(avgintervaldat)
 ```
 
 Below, 5-minute interval averages for weekdays and weekends are plotted against the 288 intervals in 2 separate plots.
 
 ```{r}
-ggplot(standarddat) + 
-        geom_line(aes(intervalgroup, steps, col = day)) +
-        xlab("Interval Group") + ylab("Steps") +
-        labs(title = "Interval Group Steps Over 61-Day Period") +
-        scale_y_log10(breaks = c(0,5,10,50,100,250,500,1000)) +
-        facet_grid(day~.)
-        fte_theme()
+ggplot(avgintervaldat) + 
+        geom_line(aes(x = interval, y = steps, col = day)) +
+         facet_grid(day~.) +
+        xlab("Interval") + ylab("Steps") +
+        labs(title = "Interval Step Averages Over 61-Day Period") +
+        scale_y_log10() +
+        theme_dark()
+       
 
 ```
 
